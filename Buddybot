@@ -1,0 +1,76 @@
+custom_responses = {}
+
+def add_custom_response(question, answer):
+    custom_responses[question.lower()] = answer
+
+def Buddybot_response(user_input):
+    user_input = user_input.lower() 
+
+    if user_input in custom_responses:
+        return custom_responses[user_input]
+
+    if user_input in ["hi", "hello", "hey"]:
+        return "Hello! How can I assist you today?"
+        
+    elif user_input in ["how are you", "how are you doing"]:
+        return "I'm just a bot, but I'm here to help you!"
+        
+    elif user_input in ["what is your name", "who are you"]:
+        return "I am your friendly chatbot. You can call me Buddybot!"
+        
+    elif user_input == "help":
+        return "Sure! I can help you with general inquiries or guide you through certain tasks."
+        
+    elif user_input in ["bye", "goodbye","exit"]:
+        return "Goodbye! Have a great day!"
+        
+    elif user_input in ["what can you do", "what are your capabilities"]:
+        return "I can respond to simple queries, provide information, and assist you with basic tasks."
+        
+    elif user_input in ["tell me a joke", "make me laugh"]:
+        return "Why don't skeletons fight each other? They don't have the guts!"
+        
+    elif user_input in ["what is the time", "what's the time", "current time"]:
+        import datetime
+        now = datetime.datetime.now()
+        return f"The current time is {now.strftime('%H:%M:%S')}."
+        
+    elif user_input in ["what is the date", "what's the date", "current date"]:
+        import datetime
+        today = datetime.date.today()
+        return f"Today's date is {today.strftime('%B %d, %Y')}."
+        
+    elif user_input in ["thank you", "thanks"]:
+        return "You're welcome! If you need anything else, feel free to ask."
+        
+    elif user_input in ["who created you", "who made you"]:
+        return "I was created by a team of developers who love to code and build useful tools!"
+        
+    elif user_input in ["what is your favorite color"]:
+        return "As a bot, I don't have preferences, but I think blue is pretty cool!"
+        
+    elif user_input in ["do you like music", "what music do you like"]:
+        return "I don't listen to music, but I can suggest some if you'd like!"
+        
+    elif user_input in ["tell me something interesting"]:
+        return "Did you know that honey never spoils? Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still edible!"
+        
+    else:
+        return "I'm sorry, I don't understand that. Can you please rephrase?"
+
+while True:
+    user_input = input("You: ")
+    
+    if user_input.lower() == "add question and answer":
+        question = input("Enter your question: ")
+        answer = input("Enter your answer: ")
+        add_custom_response(question, answer)
+        print("Buddybot: Your question and answer have been added!")
+       
+    elif user_input.lower() in ["bye", "goodbye","exit"]:
+        print("Buddybot: Goodbye! Have a great day!")
+        break
+        
+    else:
+        response = Buddybot_response(user_input)
+        print("Buddybot:", response)
