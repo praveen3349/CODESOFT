@@ -1,0 +1,171 @@
+import tkinter as tk
+from tkinter import messagebox
+import numpy as np
+
+# Tic-Tac-Toe board
+board = np.zeros((3, 3))
+ai_first = None
+
+def mark_square(row, col, player):
+    board[row][col] = player
+
+def available_square(row, col):
+    return board[row][col] == 0
+
+def is_board_full():
+    return not np.any(board == 0)
+
+def check_win(player):
+    for row in range(3):
+        if np.all(board[row, :] == player):
+            return True
+
+    for col in range(3):
+        if np.all(board[:, col] == player):
+            return True
+
+    if np.all(np.diag(board) == player) or np.all(np.diag(np.fliplr(board)) == player):
+        return True
+
+    return False
+
+def minimax(board, depth, alpha, beta, is_maximizing):
+    if check_win(2):  # AI is player 2
+        return 1
+    if check_win(1):  # Human is player 1
+        return -1
+    if is_board_full():
+        return 0
+
+    if is_maximizing:
+        max_eval = -np.inf
+        for row in range(3):
+            for col in range(3):
+                if available_square(row, col):
+                    board[row][col] = 2
+                    eval = minimax(board, depth + 1, alpha, beta, False)
+                    board[row][col] = 0
+                    max_eval = max(max_eval, eval)
+                    alpha = max(alpha, eval)
+                    if beta <= alpha:
+                        break
+        return max_eval
+
+    else:
+        min_eval = np.inf
+        for row in range(3):
+            for col in range(3):
+                if available_square(row, col):
+                    board[row][col] = 1
+                    eval = minimax(board, depth + 1, alpha, beta, True)
+                    board[row][col] = 0
+                    min_eval = min(min_eval, eval)
+                    beta = min(beta, eval)
+                    if beta <= alpha:
+                        break
+        return min_eval
+
+def ai_move():
+    best_score = -np.inf
+    best_move = None
+
+    for row in range(3):
+        for col in range(3):
+            if available_square(row, col):
+                board[row][col] = 2
+                score = minimax(board, 0, -np.inf, np.inf, False)
+                board[row][col] = 0
+                if score > best_score:
+                    best_score = score
+                    best_move = (row, col)
+
+    if best_move:
+        mark_square(best_move[0], best_move[1], 2)
+        buttons[best_move[0]][best_move[1]].config(text="X", state=tk.DISABLED, bg="#d4e157")
+
+        if check_win(2):
+            celebrate("AI wins!")
+            reset_board()
+
+def on_click(row, col):
+    if available_square(row, col):
+        mark_square(row, col, 1)
+        buttons[row][col].config(text="O", state=tk.DISABLED, bg="#64b5f6")
+
+        if check_win(1):
+            celebrate("You win!")
+            reset_board()
+        else:
+            ai_move()
+            if check_win(2):
+                celebrate("AI wins!")
+                reset_board()
+        if is_board_full():
+            celebrate("It's a draw!")
+            reset_board()
+
+def celebrate(message):
+    popup = tk.Toplevel()
+    popup.title("Game Over")
+    popup.geometry("350x200")
+    popup.configure(bg="white")
+    
+    tk.Label(popup, text=message, font=('Times New Roman', 18, 'bold'), fg="black", bg="white").pack(pady=20)
+    tk.Button(popup, text="Play Again", command=lambda: [popup.destroy(), reset_board()], bg="white", fg="black", font=('Times New Roman', 12, 'bold')).pack(pady=10)
+    popup.focus_set()
+    popup.grab_set()
+
+def reset_board():
+    global board
+    board = np.zeros((3, 3))
+    for row in range(3):
+        for col in range(3):
+            buttons[row][col].config(text="", state=tk.NORMAL, bg="#e0e0e0")
+
+    # Re-enable the start button and options
+    start_button.config(state=tk.NORMAL, bg="#4CAF50", fg="white")
+    ai_option.config(state=tk.NORMAL)
+    human_option.config(state=tk.NORMAL)
+
+def start_game():
+    global ai_first
+    if ai_first_var.get():
+        ai_first = True
+        ai_move()
+    else:
+        ai_first = False
+
+    # Disable the start button and options once the game starts
+    start_button.config(state=tk.DISABLED, bg="#9E9E9E", fg="black")
+    ai_option.config(state=tk.DISABLED)
+    human_option.config(state=tk.DISABLED)
+
+# Setting up the GUI
+root = tk.Tk()
+root.title("Tic-Tac-Toe AI")
+
+# Choose who goes first
+ai_first_var = tk.BooleanVar()
+ai_first_var.set(False)  # Default to Human first
+
+first_player_frame = tk.Frame(root)
+first_player_frame.grid(row=0, column=0, columnspan=3, pady=10)
+
+tk.Label(first_player_frame, text="Who goes first?", font=('Times New Roman', 14, 'bold')).pack(side=tk.LEFT, padx=5)
+ai_option = tk.Radiobutton(first_player_frame, text="AI", variable=ai_first_var, value=True, font=('Times New Roman', 12, 'bold'))
+ai_option.pack(side=tk.LEFT, padx=5)
+human_option = tk.Radiobutton(first_player_frame, text="Human", variable=ai_first_var, value=False, font=('Times New Roman', 12, 'bold'))
+human_option.pack(side=tk.LEFT, padx=5)
+start_button = tk.Button(first_player_frame, text="Start", command=start_game, bg="#4CAF50", fg="white", font=('Times New Roman', 12, 'bold'))
+start_button.pack(side=tk.LEFT, padx=5)
+
+buttons = [[None for _ in range(3)] for _ in range(3)]
+
+for row in range(3):
+    for col in range(3):
+        buttons[row][col] = tk.Button(root, text="", font=('Times New Roman', 40, 'bold'), width=5, height=2,
+                                      command=lambda r=row, c=col: on_click(r, c),
+                                      bg="#e0e0e0", fg="black", relief="raised", borderwidth=2)
+        buttons[row][col].grid(row=row+1, column=col, padx=5, pady=5)
+
+root.mainloop()
