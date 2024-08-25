@@ -1,0 +1,68 @@
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
+from rich.console import Console
+from rich.table import Table
+
+# Load Data from CSV
+books_df = pd.read_csv('books.csv')
+
+# Combine relevant features into a single string (excluding Publisher)
+books_df['combined_features'] = books_df['Genre'] + ' ' + books_df['Author']
+
+# Convert text data into TF-IDF matrix
+tfidf = TfidfVectorizer(stop_words='english')
+tfidf_matrix = tfidf.fit_transform(books_df['combined_features'])
+
+# Compute cosine similarity between books
+cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
+
+def recommend_books(book_title, cosine_sim, books_df):
+    # Check if the book title exists in the dataset
+    if book_title not in books_df['Title'].values:
+        return f"Book '{book_title}' not found in the dataset."
+    
+    # Get the index of the book that matches the title
+    idx = books_df.index[books_df['Title'] == book_title].tolist()[0]
+    
+    # Get the pairwise similarity scores of all books with that book
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    
+    # Sort the books based on similarity scores
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    
+    # Get the indices of the most similar books
+    book_indices = [i[0] for i in sim_scores[1:]]  # Exclude the first book itself
+    
+    # Get the top 5 most similar books
+    top_books = books_df.iloc[book_indices].head(7)
+    
+    # Add reasoning for recommendations
+    top_books['Reason'] = top_books.apply(lambda row: get_reasons(row, books_df.loc[idx]), axis=1)
+    
+    return top_books[['Title', 'Reason']]
+
+def get_reasons(row, original_book):
+    reasons = []
+    if row['Genre'] == original_book['Genre']:
+        reasons.append(f"Same Genre: {row['Genre']}")
+    if row['Author'] == original_book['Author']:
+        reasons.append(f"Same Author: {row['Author']}")
+    return ', '.join(reasons) if reasons else 'No significant match'
+
+def print_rich_table(df):
+    table = Table(title="Book Recommendations", header_style="bold magenta")
+    for column in df.columns:
+        table.add_column(column, style="cyan", no_wrap=True)
+    
+    for index, row in df.iterrows():
+        table.add_row(*row.values)
+    
+    console = Console()
+    console.print(table)
+
+# Example: Recommend books similar to 'Empire of the Mughal - The Tainted Throne'
+book_title = 'Empire of the Mughal - The Tainted Throne'  #'Python for Data Analysis'
+recommended_books = recommend_books(book_title, cosine_sim, books_df)
+print(f"Books similar to '{book_title}':")
+print_rich_table(recommended_books)
