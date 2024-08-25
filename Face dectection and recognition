@@ -1,0 +1,81 @@
+# Training code
+
+import face_recognition
+import os
+import pickle
+
+def encode_faces(dataset_path):
+    known_encodings = []
+    known_names = []
+
+    # Iterate over each person in the dataset folder
+    for person_name in os.listdir(dataset_path):
+        person_folder = os.path.join(dataset_path, person_name)
+        
+        # Iterate over each image in the person's folder
+        for image_name in os.listdir(person_folder):
+            image_path = os.path.join(person_folder, image_name)
+            image = face_recognition.load_image_file(image_path)
+            
+            # Generate face encodings
+            encodings = face_recognition.face_encodings(image)
+
+            # If a face is found, add the encoding and the corresponding name
+            if encodings:
+                known_encodings.append(encodings[0])
+                known_names.append(person_name)
+
+    # Save the encodings and names to a file
+    data = {"encodings": known_encodings, "names": known_names}
+    with open("face_encodings.pkl", "wb") as f:
+        pickle.dump(data, f)
+
+# Replace with your dataset path
+encode_faces(r"C:\Users\pprav\dataset")
+
+# Testing code 
+
+import face_recognition
+import cv2
+import pickle
+import numpy as np
+
+# Load known face encodings
+with open("face_encodings.pkl", "rb") as f:
+    data = pickle.load(f)
+
+known_encodings = data["encodings"]
+known_names = data["names"]
+
+def detect_and_recognize_face(image_path):
+    img = face_recognition.load_image_file(image_path)
+    
+    # Convert to BGR format for OpenCV
+    img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    
+    face_locations = face_recognition.face_locations(img)
+    face_encodings = face_recognition.face_encodings(img, face_locations)
+
+    for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+        matches = face_recognition.compare_faces(known_encodings, face_encoding, tolerance=0.5)
+        name = "Unknown"
+
+        if True in matches:
+            first_match_index = matches.index(True)
+            name = known_names[first_match_index]
+
+        # Draw rectangle around the face with green color
+        rectangle_color = (0, 255, 0)  # Vibrant green in BGR format
+        cv2.rectangle(img_bgr, (left, top), (right, bottom), rectangle_color, 2)
+        # Set the name color to yellow for contrast
+        name_color = (0, 255, 255)  # Yellow in BGR format
+
+        # Draw the name label
+        cv2.putText(img_bgr, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, name_color, 2)
+
+    cv2.imshow('Face Detection and Recognition', img_bgr)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+# Replace with your image file path
+detect_and_recognize_face('PHOTO.jpg')
